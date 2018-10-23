@@ -1,0 +1,107 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font: 13px Helvetica, Arial;
+}
+/* 右边 */
+.message-container{
+    padding-top:20px;
+    width:calc(100vw - 220px);
+    float:left;
+    background:#eee;
+    height:100vh;
+}
+.header{
+    height:40px;
+    border-bottom:1px #ccc solid;
+    text-align: center; 
+    line-height:3;
+}
+/* 聊天记录 */
+.records{
+    height:calc(100vh - 121px);
+}
+
+/* 输入框 */
+.content{
+    border-top:1px solid #ccc;
+    position: fixed;
+    bottom: 0;
+    width: inherit;
+}
+.content textarea {
+    border: 0;
+    padding: 10px;
+    width: 100%;
+    height:80px;
+}
+
+/* 左边 */
+.friend-container{
+    padding-top:20px;
+    width:220px;
+    float:left;
+    height:100vh;
+    border-right:1px #ccc solid;
+    overflow-y:scroll;
+}
+
+.friend{
+    clear:both;
+    cursor: pointer;
+}
+
+.pic{
+    width:40px;
+    height:40px;
+    background:#9E9E9E;
+    float:left;
+}
+.info{
+    float:left;
+    margin-left:10px;
+    margin-top:5px;
+}
+.name.off{
+    color:#ccc;
+}
+.desc{
+    color:#ccc;
+    width:120px;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+}
+
+.friend.active{
+    background:#ccc;
+}
+
+/* 总的设置 */
+.messages,.friends{
+    list-style-type: none;
+}
+
+.messages li{
+    padding: 5px 10px;
+}
+
+.friends li{
+    padding: 10px;
+    height:60px;
+    border-bottom:1px solid #ccc;
+}
+.messages li:nth-child(odd) {
+    background: #eee;
+}
+
+.container::after {
+    clear: both;
+}
+
+
+

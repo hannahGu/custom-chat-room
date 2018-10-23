@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Free chat</title>
+    <link type="text/css" rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="friend-container">
+            <ul class="friends"></ul>
+        </div>
+        <div class="message-container">
+            <div class="header"></div>
+            <div class="records">
+                <ul class="messages"></ul>
+            </div>
+            <div class="content">
+                <div class="form">
+                    <textarea autocomplete="off" class="text"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // var news = io.connect('http://localhost:3000/news');
+        window.onload = function () {
+            var socket = io();
+            const txt = document.querySelector('.text');
+            const send = document.querySelector('.content');
+            const messages = document.querySelector('.messages');
+            const friends = document.querySelector('.friends');
+            var talk = {};
+            let friendList = [];
+
+            const name = prompt('who are you?', '');
+            //注册，让服务端知道
+            socket.emit('register', name);
+            //拉取朋友列表
+            socket.on('userList', function (list) {
+                friendList = list;
+                console.log('list123 ', list);
+                genFriendsHtml(list);
+                const fName = list && list.filter(item => item.id === socket.id)[0] &&
+                    list.filter(item => item.id === socket.id)[0]['name'];
+                const fId = socket.id;
+                const toId =
+                    talk['from'] = {
+                        name: fName,
+                        id: fId
+                    };
+                talk['to'] = {
+                        name: friendList[0].name,
+                        id: friendList[0].id
+                    },
+                    talk['msg'] = '';
+            });
+
+            //和谁交谈
+            document.querySelector('.friends').onclick = function (event) {
+                const target = event.target;
+                if (target.className === 'friend' || target.className === 'friend active') {
+                    let key = target.getAttribute('data-key');
+                    target.className = 'friend active';
+                    const name = target.querySelector('name');
+                    genHeaderHtml(name);
+                    talk['to'] = {
+                        name: name,
+                        id: key
+                    };
+                }
+            }
+
+            //提交回话内容
+            send.addEventListener('keydown', function (event) {
+                if (event.code === 'Enter' || event.keyCode === 13) {
+                    event.preventDefault();
+                    const msg = txt.value;
+                    txt.value = '';
+                    talk['msg'] = msg;
+                    genRecordsHtml(talk);
+                    talk.from.id !== talk.to.id && socket.emit('private', talk);
+                }
+            })
+            //接收对话
+            socket.on('private', function (obj) {
+
+                talk.to = obj.from;
+                let list = friendList.filter(item => item.id !== obj.from.id);
+                list.unshift(obj.from);
+                friendList = list;
+                genRecordsHtml(obj);
+                genHeaderHtml(obj.from.name);
+            })
+
+            // 下期功能
+            // news.on('new', function (txt) {
+            //     const oLi = document.createElement('li');
+            //     oLi.innerText = txt;
+            //     oLi.className = 'new';
+            //     messages.appendChild(oLi);
+            // })
+        }
+
+        function genHeaderHtml(name) {
+            document.querySelector('.header').innerText = name;
+        }
+
+        function genRecordsHtml(obj) {
+            const oLi = document.createElement('li');
+            oLi.innerHTML =
+                `<span class="name">${obj.from.name}：</span>
+                <span class="msg">${obj.msg}</span>`;
+            document.querySelector('.messages').appendChild(oLi);
+        }
+
+        function genFriendsHtml(list) {
+            var str = '';
+            list.filter(item => item.name).forEach((item, index) => {
+                let className = item.status ==='on'? 'name':'name off';
+                str +=
+                    `<li class='friend' data-key=${item.id}>
+                    <div class="pic"></div>
+                    <div class="info">
+                        <p class=${className}>${item.name}</p>
+                        <p class="desc">my simple introduction</p>
+                    </div>
+                    </li>`
+            });
+            document.querySelector('.friends').innerHTML = str;
+        }
+
+        function genTalkingHtml(key) {
+            let list = document.querySelector('.friends').querySelectorAll('li');
+            list.forEach(item => {
+                if (item.getAttribute('data-key') === key) {
+                    item.className = 'friend active';
+                } else {
+                    item.className = 'friend';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
