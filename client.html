@@ -42,36 +42,21 @@
             socket.on('userList', function (list) {
                 friendList = list;
                 console.log('list123 ', list);
-                genFriendsHtml(list);
-                const fName = list && list.filter(item => item.id === socket.id)[0] &&
-                    list.filter(item => item.id === socket.id)[0]['name'];
-                const fId = socket.id;
-                const toId =
-                    talk['from'] = {
-                        name: fName,
-                        id: fId
-                    };
+                
+                // const fName = list && list.filter(item => item.id === socket.id)[0] &&
+                //     list.filter(item => item.id === socket.id)[0]['name'];
+                // const fId = socket.id;
+                talk['from'] = {
+                    name: friendList[0].name,
+                    id: friendList[0].id
+                };
                 talk['to'] = {
-                        name: friendList[0].name,
-                        id: friendList[0].id
-                    },
-                    talk['msg'] = '';
-            });
-
-            //和谁交谈
-            document.querySelector('.friends').onclick = function (event) {
-                const target = event.target;
-                if (target.className === 'friend' || target.className === 'friend active') {
-                    let key = target.getAttribute('data-key');
-                    target.className = 'friend active';
-                    const name = target.querySelector('name');
-                    genHeaderHtml(name);
-                    talk['to'] = {
                         name: name,
-                        id: key
-                    };
-                }
-            }
+                        id: socket.id
+                    },
+                talk['msg'] = '';
+                genFriendsHtml(list,socket.id);
+            });
 
             //提交回话内容
             send.addEventListener('keydown', function (event) {
@@ -79,6 +64,8 @@
                     event.preventDefault();
                     const msg = txt.value;
                     txt.value = '';
+                    talk['from']['id']=socket.id;
+                    talk['from']['name']= friendList.filter(item=>item.id=== socket.id)[0]['name'];
                     talk['msg'] = msg;
                     genRecordsHtml(talk);
                     talk.from.id !== talk.to.id && socket.emit('private', talk);
@@ -86,13 +73,13 @@
             })
             //接收对话
             socket.on('private', function (obj) {
-
                 talk.to = obj.from;
                 let list = friendList.filter(item => item.id !== obj.from.id);
                 list.unshift(obj.from);
                 friendList = list;
                 genRecordsHtml(obj);
                 genHeaderHtml(obj.from.name);
+                genTalkingHtml(obj.from.id);
             })
 
             // 下期功能
@@ -102,7 +89,29 @@
             //     oLi.className = 'new';
             //     messages.appendChild(oLi);
             // })
+            //和谁交谈
+            document.querySelector('.friends').addEventListener('click', function (event) {
+                const target = event.target;
+                let src = null;
+                if (target.className === 'pic' || target.className === 'info') {
+                    src = target.parentElement;
+                } else if (target.className === 'name' || target.className === 'desc') {
+                    src = target.parentElement.parentElement;
+                } else {
+                    src = target;
+                }
+                let key = src.getAttribute('data-key');
+                src.className = 'friend active';
+                const name = src.querySelector('.name').innerText;
+                genHeaderHtml(name);
+                talk['to'] = {
+                    name: name,
+                    id: key
+                };
+                genTalkingHtml(key);
+            })
         }
+
 
         function genHeaderHtml(name) {
             document.querySelector('.header').innerText = name;
@@ -116,15 +125,16 @@
             document.querySelector('.messages').appendChild(oLi);
         }
 
-        function genFriendsHtml(list) {
+        function genFriendsHtml(list,id) {
             var str = '';
             list.filter(item => item.name).forEach((item, index) => {
-                let className = item.status ==='on'? 'name':'name off';
+                let status = item.status === 'on' ? 'name' : 'name off';
+                let me = item.id === id ? '(me)':'';
                 str +=
-                    `<li class='friend' data-key=${item.id}>
+                    `<li class="friend" data-key=${item.id}>
                     <div class="pic"></div>
                     <div class="info">
-                        <p class=${className}>${item.name}</p>
+                        <p class=${status}>${item.name}${me}</p>
                         <p class="desc">my simple introduction</p>
                     </div>
                     </li>`

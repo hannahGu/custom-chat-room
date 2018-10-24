@@ -13,6 +13,7 @@ app.get('/client', function (req, res) {
 
 io.on('connection', function (socket) {
   socket.on('register', function (name) {
+    console.log('register ',name,socket.id);
     userList.unshift({id:socket.id,name:name,status:'on'});
     socketList[socket.id] = socket;
     io.emit('userList', userList);
