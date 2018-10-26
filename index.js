@@ -7,7 +7,7 @@ let userList = [];
 const socketList = {};
 
 app.use(express.static(__dirname + '/'));
-app.get('/client', function (req, res) {
+app.get('*', function (req, res) {
   res.sendFile(__dirname + '/client.html');
 });
 
