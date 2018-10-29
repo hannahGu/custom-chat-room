@@ -70,7 +70,7 @@ body {
     color:#ccc;
 }
 .desc{
-    color:#ccc;
+    color:#999;
     width:120px;
     white-space: nowrap;
     overflow:hidden;
@@ -88,6 +88,11 @@ body {
 
 .messages li{
     padding: 5px 10px;
+}
+
+.time{
+    color:#999;
+    margin-left:20px;
 }
 
 .friends li{

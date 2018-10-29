@@ -25,15 +25,15 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // var news = io.connect('http://localhost:3000/news');
         window.onload = function () {
             var socket = io();
             const txt = document.querySelector('.text');
             const send = document.querySelector('.content');
             const messages = document.querySelector('.messages');
             const friends = document.querySelector('.friends');
-            var talk = {};
+            let talk = {};
             let friendList = [];
+            let records = [];
 
             const name = prompt('who are you?', '');
             //注册，让服务端知道
@@ -41,11 +41,6 @@
             //拉取朋友列表
             socket.on('userList', function (list) {
                 friendList = list;
-                console.log('list123 ', list);
-                
-                // const fName = list && list.filter(item => item.id === socket.id)[0] &&
-                //     list.filter(item => item.id === socket.id)[0]['name'];
-                // const fId = socket.id;
                 talk['from'] = {
                     name: friendList[0].name,
                     id: friendList[0].id
@@ -54,29 +49,44 @@
                         name: name,
                         id: socket.id
                     },
-                talk['msg'] = '';
-                genFriendsHtml(list,socket.id);
+                    talk['msg'] = '';
+                genFriendsHtml(list, socket.id);
             });
 
             //提交回话内容
             send.addEventListener('keydown', function (event) {
                 if (event.code === 'Enter' || event.keyCode === 13) {
                     event.preventDefault();
-                    const msg = txt.value;
+                    const fId = socket.id;
+                    const fName = friendList && friendList.filter(item => item.id === socket.id)[0] &&
+                        friendList.filter(item => item.id === socket.id)[0]['name'];
+                    const target = document.querySelector('.friend.active');
+                    const toId = target.getAttribute('data-key');
+                    const toName = target.querySelector('.name').innerText;
+                    talk['from'] = {
+                        name: fName,
+                        id: socket.id
+                    };
+                    talk['to'] = {
+                        name: toName,
+                        id: toId
+                    };
+                    talk['msg'] = txt.value;
                     txt.value = '';
-                    talk['from']['id']=socket.id;
-                    talk['from']['name']= friendList.filter(item=>item.id=== socket.id)[0]['name'];
-                    talk['msg'] = msg;
-                    genRecordsHtml(talk);
+                    talk['time'] = new Date().valueOf();
+                    const tmp = Object.assign({},talk);
+                    records.push(tmp);
+                    genRecordsHtml(tmp);
                     talk.from.id !== talk.to.id && socket.emit('private', talk);
                 }
             })
             //接收对话
             socket.on('private', function (obj) {
-                talk.to = obj.from;
+                talk = obj;
                 let list = friendList.filter(item => item.id !== obj.from.id);
                 list.unshift(obj.from);
                 friendList = list;
+                records.push(talk);
                 genRecordsHtml(obj);
                 genHeaderHtml(obj.from.name);
                 genTalkingHtml(obj.from.id);
@@ -93,48 +103,80 @@
             document.querySelector('.friends').addEventListener('click', function (event) {
                 const target = event.target;
                 let src = null;
-                if (target.className === 'pic' || target.className === 'info') {
+                if (target.className === 'pic' || target.className === 'info' || target.className ===
+                    'info off') {
                     src = target.parentElement;
-                } else if (target.className === 'name' || target.className === 'desc') {
+                } else if (target.className === 'name-container' || target.className === 'desc') {
                     src = target.parentElement.parentElement;
+                } else if (target.className === 'name' || target.className === 'me') {
+                    src = target.parentElement.parentElement.parentElement;
                 } else {
                     src = target;
                 }
                 let key = src.getAttribute('data-key');
                 src.className = 'friend active';
                 const name = src.querySelector('.name').innerText;
-                genHeaderHtml(name);
+                const fName = friendList && friendList.filter(item => item.id === socket.id)[0] &&
+                    friendList.filter(item => item.id === socket.id)[0]['name'];
+                talk['from'] = {
+                    name: fName,
+                    id: socket.id
+                };
                 talk['to'] = {
                     name: name,
                     id: key
                 };
+                talk['msg'] = '';
+                genHeaderHtml(name);
                 genTalkingHtml(key);
+                const tmp = records.filter(item =>
+                    (item.from.id === talk.from.id && item.to.id === talk.to.id) ||
+                    (item.to.id === talk.from.id && item.from.id === talk.to.id)
+                );
+                genRecordsHtml(tmp);
             })
         }
-
 
         function genHeaderHtml(name) {
             document.querySelector('.header').innerText = name;
         }
 
-        function genRecordsHtml(obj) {
-            const oLi = document.createElement('li');
-            oLi.innerHTML =
-                `<span class="name">${obj.from.name}：</span>
-                <span class="msg">${obj.msg}</span>`;
-            document.querySelector('.messages').appendChild(oLi);
+        function genRecordsHtml() {
+            const arg = arguments[0];
+            if (Object.prototype.toString.call(arg) === '[object Array]') {
+                let str = '';
+                arg.length > 0 && arg.forEach(item => {
+                    str +=
+                        `
+                    <li>
+                        <span class="name">${item.from.name}：</span>
+                        <span class="msg">${item.msg}</span>
+                        <span class="time">${new Date(item.time).toLocaleString()}</span>
+                    </li>
+                    `;
+                });
+                document.querySelector('.messages').innerHTML = str;
+            } else {
+                const oLi = document.createElement('li');
+                oLi.innerHTML =
+                    `<span class="name">${arg.from.name}：</span>
+                <span class="msg">${arg.msg}</span>
+                <span class="time">${new Date(arg.time).toLocaleString()}</span>
+                `;
+                document.querySelector('.messages').appendChild(oLi);
+            }
         }
 
-        function genFriendsHtml(list,id) {
+        function genFriendsHtml(list, id) {
             var str = '';
-            list.filter(item => item.name).forEach((item, index) => {
-                let status = item.status === 'on' ? 'name' : 'name off';
-                let me = item.id === id ? '(me)':'';
+            list.forEach((item, index) => {
+                let status = item.status === 'on' ? 'info' : 'info off';
+                let me = item.id === id ? '(me)' : '';
                 str +=
                     `<li class="friend" data-key=${item.id}>
                     <div class="pic"></div>
-                    <div class="info">
-                        <p class="${status}">${item.name}${me}</p>
+                    <div class="${status}">
+                        <p class="name-container"><span class="name">${item.name}</span><span class="me">${me}</pan></p>
                         <p class="desc">my simple introduction</p>
                     </div>
                     </li>`
