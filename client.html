@@ -35,9 +35,9 @@
             let friendList = [];
             let records = [];
 
-            const name = prompt('who are you?(default is default)', '');
+            let name = prompt('who are you?(default is default)', '') || 'default';
             //注册，让服务端知道
-            socket.emit('register', name || 'default');
+            socket.emit('register', name);
             //拉取朋友列表
             socket.on('userList', function (list) {
                 friendList = list;
